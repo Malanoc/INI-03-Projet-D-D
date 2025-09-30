@@ -12,7 +12,6 @@
 #----------------Importations ----------------
 from dataclasses import dataclass
 import json
-from tabulate import tabulate  #dans terminal : pip install tabulate
 import random
 
 # ------------------------- Catalogues  ------------------------- #
