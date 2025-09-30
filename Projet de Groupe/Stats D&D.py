@@ -18,6 +18,7 @@ import random
 RACES = ["Humain", "Elfe", "Nain", "Halfelin"]
 CLASSES = ["Guerrier", "Voleur", "Clerc", "Magicien"]
 BACKGROUNDS = ["Soldat", "Acolyte", "Criminel", "Savant"]
+SKILLS = ["Athlétisme (FOR)", "Acrobaties (DEX)", "Arcanes (INT)", "Discrétion (DEX)", "Dressage (SAG)", "Escamotage (DEX)", "Histoire (INT)", "Intimidation (CHA)", "Intuition (SAG)", "Investigation (INT)", "Médecine (SAG)", "Nature (INT)", "Perception (SAG)", "Persuasion (CHA)", "Religion (INT)", "Representation (CHA)", "Survie (SAG)", "Tromperie (CHA)"]
 # Armes par classe
 WEAPON_GUERRIER = ["Marteau de guerre (2 mains)", "Epée longue (1 main)", "Fléau d'arme (1 main)"]
 WEAPON_MAGICIEN = ["Bâton de combat (2 mains)", "Dague (1 main)", "Gourdin (1 main)"]
@@ -53,6 +54,7 @@ class Character:
     charisme: int
     modif_charisme: int
     background: str
+    skills: list[str]
     weapon: str
     shield: str
 
@@ -76,6 +78,7 @@ class Character:
             f"Charisme     : {self.charisme}\n"
             f"Modificateur de Charisme : {self.modif_charisme}\n"
             f"Historique: {self.background}\n"
+            f"Compétences : {self.skills}\n"
             f"Arme      : {self.weapon}\n"
             f"Bouclier  : {self.shield}\n"
         )
@@ -99,6 +102,7 @@ class Character:
             'charisme': self.charisme,
             'modif_charisme': self.modif_charisme,
             'background': self.background,
+            'skills': self.skills,
             'weapon': self.weapon,
             'shield': self.shield
         }
@@ -114,10 +118,11 @@ class CharacterCreator:
 # Gestion du flux de création en console (I/O).
 # Séparé du modèle pour faciliter les tests et d'autres interfaces.
 
-    def __init__(self, races, classes, backgrounds, weapon, shield, stat_fix, methodes_stat):
+    def __init__(self, races, classes, backgrounds, weapon, shield, stat_fix, methodes_stat, skills):
         self.races = list(races)
         self.classes = list(classes)
         self.backgrounds = list(backgrounds)
+        self.skills = list(skills)
         self.weapon = list(weapon)
         self.shield = list(shield)
         self.stat_fix = list(stat_fix)
@@ -200,12 +205,16 @@ class CharacterCreator:
         match classe:
             case "Guerrier":
                 weapon = self.ask_choice("\nChoisissez une arme :", WEAPON_GUERRIER)
+                nbr_comp = 2  # Nombre de compétences à choisir pour le guerrier
             case "Magicien":
                 weapon = self.ask_choice("\nChoisissez une arme :", WEAPON_MAGICIEN)
+                nbr_comp = 2  # Nombre de compétences à choisir pour le magicien
             case "Voleur":
                 weapon = self.ask_choice("\nChoisissez une arme :", WEAPON_VOLEUR)
+                nbr_comp = 4  # Nombre de compétences à choisir pour le voleur
             case "Clerc":
                 weapon = self.ask_choice("\nChoisissez une arme :", WEAPON_CLERC)
+                nbr_comp = 2  # Nombre de compétences à choisir pour le clerc
                 
         # Choix du bouclier en fonction de l'arme
         match weapon:
@@ -213,6 +222,13 @@ class CharacterCreator:
                 shield = "Non équipé"
             case _:
                 shield = self.ask_choice("\nChoisissez si vous voulez équiper un bouclier :", self.shield)
+
+        # Choix des compétences
+        competences = []  # Liste pour stocker les compétences choisies
+        for c in range(nbr_comp):  # Choix de 2 compétences
+            skill = (self.ask_choice(f"\nChoisissez la compétence {c + 1} :", self.skills))
+            competences.append(skill)  # Ajout de la compétence choisie à la liste
+            self.skills.remove(skill)  # Empêche de choisir la même compétence
 
         return Character(
             name=name, 
@@ -232,12 +248,13 @@ class CharacterCreator:
             modif_constitution=modif_constitution,
             modif_intelligence=modif_intelligence, 
             modif_sagesse=modif_sagesse, 
-            modif_charisme=modif_charisme)
+            modif_charisme=modif_charisme,
+            skills=competences)
 
 
 # ------------------------- Programme principal ------------------------- #
 def main():
-    creator = CharacterCreator(RACES, CLASSES, BACKGROUNDS, WEAPON_GUERRIER + WEAPON_MAGICIEN + WEAPON_VOLEUR + WEAPON_CLERC, SHIELD, SCORES_FIXES, METHODES_STAT)
+    creator = CharacterCreator(RACES, CLASSES, BACKGROUNDS, WEAPON_GUERRIER + WEAPON_MAGICIEN + WEAPON_VOLEUR + WEAPON_CLERC, SHIELD, SCORES_FIXES, METHODES_STAT, SKILLS)
     character = creator.run()
     print(character.summary())
     character.to_json()
