@@ -17,6 +17,7 @@ CLASSES = ["Guerrier", "Voleur", "Clerc", "Magicien"]
 BACKGROUNDS = ["Soldat", "Acolyte", "Criminel", "Savant"]
 
 
+
 # ------------------------- Modèle ------------------------- #
 @dataclass
 #Classe de données pour un personnage D&D.
