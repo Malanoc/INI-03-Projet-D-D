@@ -10,6 +10,7 @@
 # ==============================================================
 
 from dataclasses import dataclass
+import json
 
 # ------------------------- Catalogues  ------------------------- #
 RACES = ["Humain", "Elfe", "Nain", "Halfelin"]
@@ -46,6 +47,23 @@ class Character:
             f"Arme      : {self.weapon}\n"
             f"Bouclier  : {self.shield}\n"
         )
+
+
+    # Fonction pour exporter la fiche de personnage en JSON.
+    def to_json(self):
+        data = {
+            'name': self.name,
+            'race': self.race,
+            'classe': self.classe,
+            'background': self.background,
+            'weapon': self.weapon,
+            'shield': self.shield
+        }
+        #nom du fichier basé sur le nom du personnage
+        filename = self.name + ".json"
+        with open(filename, 'w', encoding="utf-8") as f:
+            f.write(json.dumps(data, indent=4, ensure_ascii=False))
+        print(f"\n→ Fiche de personnage exportée vers {filename}")
 
 
 # ------------------------- UI Console ------------------------- #
@@ -113,6 +131,7 @@ def main():
     creator = CharacterCreator(RACES, CLASSES, BACKGROUNDS, WEAPON_GUERRIER + WEAPON_MAGICIEN + WEAPON_VOLEUR + WEAPON_CLERC, SHIELD)
     character = creator.run()
     print(character.summary())
+    character.to_json()
 
 if __name__ == "__main__":
     main()
