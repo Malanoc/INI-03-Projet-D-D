@@ -61,6 +61,12 @@ class Character:
     skills: list[str]
     weapon: str
     shield: str
+    #Ajout des bonus de mait, CA, points de vie...
+    maitrise: int
+    ca: int
+    pv: int
+    touche: int
+    de_degats: int
 
     # Fonction pour afficher un résumé du personnage.
     def summary(self) -> str:
@@ -85,6 +91,12 @@ class Character:
             f"Compétences : {self.skills}\n"
             f"Arme      : {self.weapon}\n"
             f"Bouclier  : {self.shield}\n"
+            #Ajout des bonus de mait, CA, points de vie...
+            f"Bonus de maitrise : {self.maitrise}\n"
+            f"Classe d'armure : {self.ca}\n"
+            f"Points de vie : {self.pv}\n"
+            f"Bonus/Malus au touché : {self.touche}\n"
+            f"Type dé dégâts : {self.de_degats}\n"
         )
 
     # Fonction pour exporter la fiche de personnage en JSON.
@@ -108,7 +120,13 @@ class Character:
             'background': self.background,
             'skills': self.skills,
             'weapon': self.weapon,
-            'shield': self.shield
+            'shield': self.shield,
+            #Ajout des bonus de mait, CA, points de vie...
+            'maitrise': self.maitrise,
+            'ca': self.ca,
+            'pv': self.pv,
+            'touche': self.touche,
+            'de_degats': self.de_degats
         }
         # nom du fichier basé sur le nom du personnage
         filename = self.name + ".json"
@@ -159,6 +177,9 @@ class CharacterCreator:
         name = self.ask_name()
         race = self.ask_choice("\nChoisissez une race :", self.races)
         classe = self.ask_choice("\nChoisissez une classe :", self.classes)
+        # Initialisation de maitrise et CA de base
+        maitrise = 2
+        ca = 10
 
         # Choix de la méthode de définition des statistiques
         methodes = self.ask_choice("\nChoisissez une méthode :", METHODES_STAT)
@@ -212,15 +233,23 @@ class CharacterCreator:
             case "Guerrier":
                 weapon = self.ask_choice("\nChoisissez une arme :", WEAPON_GUERRIER)
                 nbr_comp = 2  # Nombre de compétences à choisir pour le guerrier
+                pv = 10 + modif_constitution  # Points de vie du guerrier
+                ca = 18  # Classe d'armure du guerrier (armure de plaques)
             case "Magicien":
                 weapon = self.ask_choice("\nChoisissez une arme :", WEAPON_MAGICIEN)
                 nbr_comp = 2  # Nombre de compétences à choisir pour le magicien
+                pv = 6 + modif_constitution  # Points de vie du magicien
+                ca += modif_dexterite  # Classe d'armure du magicien
             case "Voleur":
                 weapon = self.ask_choice("\nChoisissez une arme :", WEAPON_VOLEUR)
                 nbr_comp = 4  # Nombre de compétences à choisir pour le voleur
+                pv = 8 + modif_constitution  # Points de vie du voleur
+                ca = ca + 1 + modif_dexterite  # Classe d'armure du voleur (+1 pour armure de cuir)
             case "Clerc":
                 weapon = self.ask_choice("\nChoisissez une arme :", WEAPON_CLERC)
                 nbr_comp = 2  # Nombre de compétences à choisir pour le clerc
+                pv = 8 + modif_constitution  # Points de vie du clerc
+                ca = ca + 4 + modif_dexterite  # Classe d'armure du clerc (+4 pour armure de mailles)
 
         # Choix du bouclier en fonction de l'arme
         match weapon:
@@ -228,6 +257,50 @@ class CharacterCreator:
                 shield = "Non équipé"
             case _:
                 shield = self.ask_choice("\nChoisissez si vous voulez équiper un bouclier :", self.shield)
+
+        if shield == "Equipé":
+            ca += 2  # Bonus de CA pour le bouclier
+        else:
+            ca += 0  # Pas de bonus de CA si pas de bouclier
+
+        # Définition des bonus/malus au touché et type de dé de dégâts en fonction de l'arme
+        match weapon:
+            case "Marteau de guerre (2 mains)":
+                touche = modif_force + maitrise
+                de_degats = 8
+            case "Epée longue (1 main)":
+                touche = modif_force + maitrise
+                de_degats = 8
+            case "Fléau d'arme (1 main)":
+                touche = modif_force + maitrise
+                de_degats = 8
+            case "Bâton de combat (2 mains)":
+                touche = modif_dexterite + maitrise
+                de_degats = 6
+            case "Dague (1 main)":
+                touche = modif_dexterite + maitrise
+                de_degats = 4
+            case "Gourdin (1 main)":
+                touche = modif_dexterite + maitrise
+                de_degats = 6
+            case "Arc long (2 mains)":
+                touche = modif_dexterite + maitrise
+                de_degats = 8
+            case "Rapière (1 main)":
+                touche = modif_dexterite + maitrise
+                de_degats = 8
+            case "Lance (2 mains)":
+                touche = modif_force + maitrise
+                de_degats = 6
+            case "Masse d'arme (1 main)":
+                touche = modif_force + maitrise
+                de_degats = 6
+            case "Hache (1 main)":
+                touche = modif_force + maitrise
+                de_degats = 6
+            case _:
+                touche = 0
+                de_degats = 0
 
         # Choix des compétences
         competences = []  # Liste pour stocker les compétences choisies
@@ -255,7 +328,12 @@ class CharacterCreator:
             modif_intelligence=modif_intelligence,
             modif_sagesse=modif_sagesse,
             modif_charisme=modif_charisme,
-            skills=competences)
+            skills=competences,
+            maitrise=maitrise,
+            ca=ca,
+            pv=pv,
+            touche=touche,
+            de_degats=de_degats)
 
 
 # ------------------------- Programme principal ------------------------- #
