@@ -1,0 +1,29 @@
+{
+    "name": "Super-Clochard",
+    "race": "Humain",
+    "classe": "Guerrier",
+    "force": 14,
+    "modif_force": 2,
+    "dexterite": 10,
+    "modif_dexterite": 0,
+    "constitution": 9,
+    "modif_constitution": -1,
+    "intelligence": 9,
+    "modif_intelligence": -1,
+    "sagesse": 11,
+    "modif_sagesse": 0,
+    "charisme": 12,
+    "modif_charisme": 1,
+    "background": "Soldat",
+    "skills": [
+        "Athlétisme (FOR)",
+        "Acrobaties (DEX)"
+    ],
+    "weapon": "Epée longue (1 main)",
+    "shield": "Equipé",
+    "maitrise": 2,
+    "ca": 20,
+    "pv": 9,
+    "touche": 4,
+    "de_degats": 8
+}

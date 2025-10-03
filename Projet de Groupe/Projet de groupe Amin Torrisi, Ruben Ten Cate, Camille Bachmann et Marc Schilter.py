@@ -14,6 +14,14 @@ from dataclasses import dataclass
 import json
 import random
 
+#--------------------------Variables pour le combat bonus----------------
+#Profil du Gobelin
+ennemi_name = "Gobelin"
+ennemi_hitpoint = 15
+ennemi_ca = 13
+ennemi_touche = 4
+ennemi_dice = 6
+
 # ------------------------- Catalogues  ------------------------- #
 RACES = ["Humain", "Elfe", "Nain", "Halfelin"]
 CLASSES = ["Guerrier", "Voleur", "Clerc", "Magicien"]
@@ -36,7 +44,6 @@ CARACTERISTIQUES = ["\033[91mForce\033[0m", "\033[34mDextérité\033[0m", "\033[
 # Liste scores des caracteristiques option méthode fixe
 SCORES_FIXES = [15, 14, 13, 12, 10, 8]
 METHODES_STAT = ["Méthode fixe", "Méthode aléatoire"]
-
 
 # ------------------------- Modèle ------------------------- #
 @dataclass
@@ -67,6 +74,51 @@ class Character:
     pv: int
     touche: int
     de_degats: int
+
+    # ------------------------- Fonction de combat (bonus) ------------------------- #
+
+    def combat(self, nom_ennemi, pv_ennemi, ca_ennemi, touche_ennemi, de_degats_ennemi):
+        print(f"Vous rencontrez un {nom_ennemi} !")
+        while self.pv > 0 and pv_ennemi > 0:
+            # Le combat a lieu
+            # Attaque du personnage
+            input("Appuyez sur Entrée pour attaquer...")
+            print("Vous attaquez !")
+            touche_chara = random.randint(1, 20) + self.touche
+            if touche_chara >= ca_ennemi:
+                print(f"Vous touchez le {nom_ennemi} !")
+                degats = random.randint(1, self.de_degats) + self.touche
+                pv_ennemi -= degats
+                # Au cas ou on tue l ennemi à ce moment
+                if pv_ennemi <= 0:
+                    print(f"Vous infligez {degats} points de dégâts au {nom_ennemi}. Il lui reste 0 points de vie.")
+                    break
+                else:
+                    print(
+                        f"Vous infligez {degats} points de dégâts au {nom_ennemi}. Il lui reste {pv_ennemi} points de vie.")
+            else:
+                print(f"Vous ratez votre attaque contre le {nom_ennemi}.")
+            # Attaque de l'ennemi
+            print(f"Le {nom_ennemi} attaque !")
+            touche_ad = random.randint(1, 20) + touche_ennemi
+            if touche_ad >= self.ca:
+                print(f"Le {nom_ennemi} vous touche !")
+                degats_ad = random.randint(1, de_degats_ennemi) + touche_ennemi
+                self.pv -= degats_ad
+                if self.pv <= 0:
+                    print(f"Le {nom_ennemi} vous inflige {degats_ad} points de dégâts. Il vous reste 0 points de vie.")
+                else:
+                    print(
+                        f"Le {nom_ennemi} vous inflige {degats_ad} points de dégâts. Il vous reste {self.pv} points de vie.")
+            else:
+                print(f"Le {nom_ennemi} rate son attaque contre vous.")
+        # le combat se termine
+        if self.pv <= 0:
+            print("Vous avez été vaincu !")
+            return False
+        else:
+            print(f"Vous avez vaincu le {nom_ennemi} !")
+            return True
 
     # Fonction pour afficher un résumé du personnage.
     def summary(self) -> str:
@@ -344,7 +396,8 @@ def main():
     character = creator.run()
     print(character.summary())
     character.to_json()
-
+    #pour le combat, utilise le profil du gobelin:
+    character.combat(ennemi_name, ennemi_hitpoint, ennemi_ca, ennemi_touche, ennemi_dice)
 
 if __name__ == "__main__":
     main()
