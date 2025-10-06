@@ -245,15 +245,8 @@ class Character:
 - ✅ Interface utilisateur intuitive
 - ✅ Git workflow propre
 
-## 📄 Licence
 
-Projet éducatif - École d'ingénieur
-Tous droits réservés aux auteurs
-
-## 🎓 Contexte académique
-
-Projet réalisé dans le cadre du module **INI-03** - Programmation Orientée Objet
-Formation : Ingénierie informatique
+Projet réalisé dans le cadre du module **INI-03** -
 
 ---
 
