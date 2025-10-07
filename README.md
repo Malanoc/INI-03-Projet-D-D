@@ -260,11 +260,13 @@ Projet réalisé dans le cadre du module **INI-03** -
 - Création du personnage de base (Race, classe, background, nom) + test des entrées de l'utilisateur pour chaque fonction.
 - Création de la structure orientée objet et fonctions de bases
 - Création du Repo GitHub
+- Création et conception du diagramme de flux
 
 **Camille:**
 - Création du système de séléction de l'équipement et compétences
 - Création du système de sauvegarde de la fiche en format json
 - Ajout du combat et des caractéristiques associées
+- Création et conception du diagramme de flux
 
 **Ruben:** 
 - Création du système de séléction des caractéristiques
