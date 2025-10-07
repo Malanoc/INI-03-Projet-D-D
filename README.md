@@ -256,24 +256,27 @@ Projet réalisé dans le cadre du module **INI-03** -
 
 ## 📊 Répartition du travail
 
-Marc: 
+**Marc:**
 - Création du personnage de base (Race, classe, background, nom) + test des entrées de l'utilisateur pour chaque fonction.
-- Cération du Repo GitHub
+- Création de la structure orientée objet et fonctions de bases
+- Création du Repo GitHub
 
-Camille:
+**Camille:**
 - Création du système de séléction de l'équipement et compétences
 - Création du système de sauvegarde de la fiche en format json
 - Ajout du combat et des caractéristiques associées
 
-Ruben: 
-- Création du système de séléction des caractéristiques avec modificateurs
+**Ruben:** 
+- Création du système de séléction des caractéristiques
 - Création d'un lancé aléatoire des valeurs pour les caratéristique du personnage
+- Calcul des modificateurs
 
-Amin:
+**Amin:**
 - Adaptation du script pour un interface graphique
 - Création de l'interface graphique
+- Explication de Git Hub à Ruben et Camille
 
-Tâche commune à tous:
+**Tâche commune à tous:**
 - Tests des fonctions
 - Gestions des branches du repo GitHub
 
