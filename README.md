@@ -281,7 +281,6 @@ Tâche commune à tous:
 
 ## 📝 Sources :
 
-  https://www.youtube.com/watch?v=wxnXNcU-YBQ&list=PLjrnnc4BZaRCR5eOXSTAgKJpBl62Y7o45 - Pour apprendre Tkinter
-  
-  Chat gpt pour le ReadME
+  - https://www.youtube.com/watch?v=wxnXNcU-YBQ&list=PLjrnnc4BZaRCR5eOXSTAgKJpBl62Y7o45 - Pour apprendre Tkinter
+  - Chat gpt pour le ReadME
 
