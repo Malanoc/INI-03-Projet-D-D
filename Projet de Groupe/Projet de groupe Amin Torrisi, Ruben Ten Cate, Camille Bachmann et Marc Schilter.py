@@ -527,6 +527,24 @@ class CharacterCreatorGUI:
         self.character_data['modif_sagesse'] = int((self.character_data['sagesse'] - 10) // 2)
         self.character_data['modif_charisme'] = int((self.character_data['charisme'] - 10) // 2)
 
+        #Modif des stats selon les races choisies
+        if self.character_data['race'] == "Humain":
+            self.character_data['force'] += 1
+            self.character_data['dexterite'] += 1
+            self.character_data['constitution'] += 1
+            self.character_data['intelligence'] += 1
+            self.character_data['sagesse'] += 1
+            self.character_data['charisme'] += 1
+        elif self.character_data['race'] == "Elfe":
+            self.character_data['dexterite'] += 2
+            self.character_data['intelligence'] += 1 #en principe sous-race haut elfe dans les règles originales
+        elif self.character_data['race'] == "Nain":
+            self.character_data['constitution'] += 2
+            self.character_data['force'] += 2 #en principe sous-race nain des montagnes dans les règles originales
+        elif self.character_data['race'] == "Halfelin":
+            self.character_data['dexterite'] += 2
+            self.character_data['charisme'] += 1 #en principe sous-race halfelin pieds-léger dans les règles originales
+
         stats_frame = tk.Frame(self.scrollable_frame, bg='#34495e', relief='raised', bd=2)
         stats_frame.pack(pady=10, padx=50, fill='x')
 
