@@ -251,3 +251,25 @@ Projet réalisé dans le cadre du module **INI-03** -
 ---
 
 **Bon jeu et que les dés vous soient favorables ! 🎲**
+
+---
+
+## 📊 Répartition du travail
+
+Marc: 
+- Création du personnage de base (Race, classe, background, nom) + test des entrées de l'utilisateur pour chaque fonction.
+- Cération du Repo GitHub
+Camille:
+- Création du système de séléction de l'équipement
+- Création du système de sauvegarde de la fiche en format json
+Ruben: 
+- Création du système de séléction des caratéristiques 
+- Création d'un lancé aléatoire des valeurs pour les caratéristique du personnage
+Amin:
+- Adaptation du script pour un interface graphique
+- Création de l'interface graphique
+
+Tâche commune à tous:
+- Tests des fonctions
+- Gestions des branches du repo GitHub
+
