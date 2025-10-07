@@ -261,12 +261,14 @@ Marc:
 - Cération du Repo GitHub
 
 Camille:
-- Création du système de séléction de l'équipement
+- Création du système de séléction de l'équipement et compétences
 - Création du système de sauvegarde de la fiche en format json
+- Ajout du combat et des caractéristiques associées
 
 Ruben: 
-- Création du système de séléction des caratéristiques 
+- Création du système de séléction des caractéristiques avec modificateurs
 - Création d'un lancé aléatoire des valeurs pour les caratéristique du personnage
+- testeur professionnel
 
 Amin:
 - Adaptation du script pour un interface graphique
