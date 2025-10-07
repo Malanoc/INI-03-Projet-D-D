@@ -282,5 +282,7 @@ Tâche commune à tous:
 ## 📝 Sources :
 
   - https://www.youtube.com/watch?v=wxnXNcU-YBQ&list=PLjrnnc4BZaRCR5eOXSTAgKJpBl62Y7o45 - Pour apprendre Tkinter
-  - Chat gpt pour le ReadME
-
+  - Chat gpt - Pour le ReadME
+  - W3schools
+  - Copilot
+  - Divers livres de règles sur D&D - code pas exactement fidèle aux règles
