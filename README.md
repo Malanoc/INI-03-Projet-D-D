@@ -268,7 +268,6 @@ Camille:
 Ruben: 
 - Création du système de séléction des caractéristiques avec modificateurs
 - Création d'un lancé aléatoire des valeurs pour les caratéristique du personnage
-- testeur professionnel
 
 Amin:
 - Adaptation du script pour un interface graphique
