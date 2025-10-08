@@ -537,13 +537,13 @@ class CharacterCreatorGUI:
             self.character_data['dexterite'] += 2
             self.character_data['charisme'] += 1 #en principe sous-race halfelin pieds-léger dans les règles originales
 
-            # Calcul des modificateurs
-            self.character_data['modif_force'] = int((self.character_data['force'] - 10) // 2)
-            self.character_data['modif_dexterite'] = int((self.character_data['dexterite'] - 10) // 2)
-            self.character_data['modif_constitution'] = int((self.character_data['constitution'] - 10) // 2)
-            self.character_data['modif_intelligence'] = int((self.character_data['intelligence'] - 10) // 2)
-            self.character_data['modif_sagesse'] = int((self.character_data['sagesse'] - 10) // 2)
-            self.character_data['modif_charisme'] = int((self.character_data['charisme'] - 10) // 2)
+        # Calcul des modificateurs
+        self.character_data['modif_force'] = int((self.character_data['force'] - 10) // 2)
+        self.character_data['modif_dexterite'] = int((self.character_data['dexterite'] - 10) // 2)
+        self.character_data['modif_constitution'] = int((self.character_data['constitution'] - 10) // 2)
+        self.character_data['modif_intelligence'] = int((self.character_data['intelligence'] - 10) // 2)
+        self.character_data['modif_sagesse'] = int((self.character_data['sagesse'] - 10) // 2)
+        self.character_data['modif_charisme'] = int((self.character_data['charisme'] - 10) // 2)
 
         stats_frame = tk.Frame(self.scrollable_frame, bg='#34495e', relief='raised', bd=2)
         stats_frame.pack(pady=10, padx=50, fill='x')
