@@ -10,6 +10,7 @@
 # ==============================================================
 
 # ----------------Importations ----------------
+#Verifier d'avoir bien installé les librairies
 from dataclasses import dataclass
 import random
 import tkinter as tk
@@ -22,17 +23,21 @@ import time
 
 # --------------------------Variables pour le combat bonus----------------
 # Profil du Gobelin
-ennemi_name = "Gobelin"
-ennemi_hitpoint = 0
-ennemi_ca = 13
-ennemi_touche = 4
-ennemi_dice = 6
-ennemi_deg = 2
+ennemi_name = "Gobelin" #nom
+ennemi_hitpoint = 0 #point de vie set plus tard
+ennemi_ca = 13 #classe d'armure
+ennemi_touche = 4 #bonus au touché
+ennemi_dice = 6 #d6 pour les dégats
+ennemi_deg = 2 #bonus au dégats
 
 # ------------------------- Catalogues  ------------------------- #
+#races disponibles
 RACES = ["Humain", "Elfe", "Nain", "Halfelin"]
+#classes disponibles
 CLASSES = ["Guerrier", "Voleur", "Clerc", "Magicien"]
+#historiques disponibles
 BACKGROUNDS = ["Soldat", "Acolyte", "Criminel", "Savant"]
+#compétences disponibles
 SKILLS = ["Athlétisme (FOR)", "Acrobaties (DEX)", "Arcanes (INT)", "Discrétion (DEX)", "Dressage (SAG)",
           "Escamotage (DEX)", "Histoire (INT)", "Intimidation (CHA)", "Intuition (SAG)", "Investigation (INT)",
           "Médecine (SAG)", "Nature (INT)", "Perception (SAG)", "Persuasion (CHA)", "Religion (INT)",
@@ -46,9 +51,11 @@ WEAPON_CLERC = ["Lance (2 mains)", "Masse d'arme (1 main)", "Hache (1 main)"]
 SHIELD = ["Equipé", "Non équipé"]
 
 # ----------------Listes [statistiques]----------------
+#caractéristiques
 CARACTERISTIQUES = ["Force", "Dextérité", "Constitution", "Intelligence", "Sagesse", "Charisme"]
 # Liste scores des caracteristiques option méthode fixe
 SCORES_FIXES = [15, 14, 13, 12, 10, 8]
+#méthodes à choix
 METHODES_STAT = ["Méthode fixe", "Méthode aléatoire"]
 
 
@@ -75,7 +82,6 @@ class Character:
     skills: list[str]
     weapon: str
     shield: str
-    # Ajout des bonus de mait, CA, points de vie...
     maitrise: int
     ca: int
     pv: int
@@ -90,13 +96,16 @@ class Character:
         combat_callback est une fonction qui prend un message en paramètre et l'affiche
         """
         combat_callback(f"Vous rencontrez un {nom_ennemi} !\n")
-
+        #lorsque le perso et le gobelin sont en vie
         while self.pv > 0 and pv_ennemi > 0:
-            # Attaque du personnage
+            # Tour du personnage
             combat_callback("=== Votre tour d'attaque ===\n")
+            #jet de touche
             touche_chara = random.randint(1, 20) + self.touche
             if touche_chara >= ca_ennemi:
+                #touche réussie
                 combat_callback(f"Vous touchez le {nom_ennemi} !\n")
+                #jet degat
                 degats = random.randint(1, self.de_degats) + self.bonusdeg
                 pv_ennemi -= degats
                 # Au cas ou on tue l ennemi à ce moment
@@ -105,32 +114,42 @@ class Character:
                         f"Vous infligez {degats} points de dégâts au {nom_ennemi}. Il lui reste 0 points de vie.\n")
                     break
                 else:
+                    #ennemi blessé mais pas mort
                     combat_callback(
                         f"Vous infligez {degats} points de dégâts au {nom_ennemi}. Il lui reste {pv_ennemi} points de vie.\n")
             else:
+                #attaque ratée
                 combat_callback(f"Vous ratez votre attaque contre le {nom_ennemi}.\n")
 
-            # Attaque de l'ennemi
+            # Tour de l'ennemi
             combat_callback(f"\n=== Tour du {nom_ennemi} ===\n")
+            #jet de touche
             touche_ad = random.randint(1, 20) + touche_ennemi
             if touche_ad >= self.ca:
+                #attaque réussie
                 combat_callback(f"Le {nom_ennemi} vous touche !\n")
+                #jet dégat
                 degats_ad = random.randint(1, de_degats_ennemi) + deg_ennemi
                 self.pv -= degats_ad
+                #si l'ennemi tue le pj
                 if self.pv <= 0:
                     combat_callback(
                         f"Le {nom_ennemi} vous inflige {degats_ad} points de dégâts. Il vous reste 0 points de vie.\n")
                 else:
+                    #touché mais en vie
                     combat_callback(
                         f"Le {nom_ennemi} vous inflige {degats_ad} points de dégâts. Il vous reste {self.pv} points de vie.\n\n")
             else:
+                #attaque ratée
                 combat_callback(f"Le {nom_ennemi} rate son attaque contre vous.\n\n")
 
         # le combat se termine
         if self.pv <= 0:
+            #pj mort
             combat_callback("\n=== DÉFAITE ===\nVous avez été vaincu !\n")
             return False
         else:
+            #gobelin mort
             combat_callback(f"\n=== VICTOIRE ===\nVous avez vaincu le {nom_ennemi} !\n")
             return True
 
@@ -157,7 +176,6 @@ class Character:
             f"Compétences : {', '.join(self.skills)}\n"
             f"Arme      : {self.weapon}\n"
             f"Bouclier  : {self.shield}\n"
-            # Ajout des bonus de mait, CA, points de vie...
             f"Bonus de maitrise : {self.maitrise}\n"
             f"Classe d'armure : {self.ca}\n"
             f"Points de vie : {self.pv}\n"
@@ -595,9 +613,11 @@ class CharacterCreatorGUI:
         self.character_data['stat_method'] = 'aléatoire'
 
         def roll_dice():
+            #jet de dé pour définir les cara
             rolls = [random.randint(1, 6) for _ in range(3)]
             return sum(rolls)
 
+        #cara définie par un jet de dé
         self.character_data['force'] = roll_dice()
         self.character_data['dexterite'] = roll_dice()
         self.character_data['constitution'] = roll_dice()
@@ -867,7 +887,7 @@ class CharacterCreatorGUI:
         if shield == "Equipé":
             ca += 2
 
-        # Calcul du bonus au touché et des dégâts selon l'arme
+        # Calcul du bonus au touché et des dégâts selon l'arme + bonus au dégat
         weapon_stats = {
             "Marteau de guerre (2 mains)": (modif_force + maitrise, 8, modif_force),
             "Epée longue (1 main)": (modif_force + maitrise, 8, modif_force),
@@ -1137,6 +1157,7 @@ class CharacterCreatorGUI:
         self.combat_log.update()
 
     def process_combat_turn(self):
+        #similaire à ce qui est expliqué tout en haut
         """Traite un tour de combat"""
         if self.combat_finished:
             return
@@ -1205,6 +1226,6 @@ def main():
     app = CharacterCreatorGUI(root)
     root.mainloop()
 
-
+#Lancement du programme
 if __name__ == "__main__":
     main()
