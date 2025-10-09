@@ -1,7 +1,7 @@
 # ==============================================================
 #  Auteur        : Amin Torrisi, Ruben Ten Cate, Camille Bachmann et Marc Schilter
 #  Date création : 16.09.2025
-#  Dernière modif : 07.10.2025
+#  Dernière modif : 09.10.2025
 #  Présentation : Interface graphique pour la création d'une fiche de personnage D&D basique
 #                 en utilisant la programmation orientée objet (OOP) et tkinter.
 #                 Possibilité de faire un export de cette dernière pour la sauvgarder.
@@ -11,10 +11,14 @@
 
 # ----------------Importations ----------------
 from dataclasses import dataclass
-import json
 import random
 import tkinter as tk
 from tkinter import ttk, messagebox, scrolledtext
+import json
+from pdfrw import PdfReader, PdfWriter, PdfDict, PdfObject, PdfName, PdfString
+import subprocess
+import os
+import time
 
 # --------------------------Variables pour le combat bonus----------------
 # Profil du Gobelin
@@ -22,8 +26,8 @@ ennemi_name = "Gobelin"
 ennemi_hitpoint = 0
 ennemi_ca = 13
 ennemi_touche = 4
-ennemi_deg = 2
 ennemi_dice = 6
+ennemi_deg = 2
 
 # ------------------------- Catalogues  ------------------------- #
 RACES = ["Humain", "Elfe", "Nain", "Halfelin"]
@@ -77,7 +81,7 @@ class Character:
     pv: int
     touche: int
     de_degats: int
-    bonusdeg : int
+    bonusdeg: int
 
     # ------------------------- Fonction de combat (bonus) ------------------------- #
     def combat(self, nom_ennemi, pv_ennemi, ca_ennemi, touche_ennemi, de_degats_ennemi, deg_ennemi, combat_callback):
@@ -164,7 +168,7 @@ class Character:
 
     # Fonction pour exporter la fiche de personnage en JSON.
     def to_json(self):
-        data = {
+        return {
             'name': self.name,
             'race': self.race,
             'classe': self.classe,
@@ -184,7 +188,6 @@ class Character:
             'skills': self.skills,
             'weapon': self.weapon,
             'shield': self.shield,
-            # Ajout des bonus de mait, CA, points de vie...
             'maitrise': self.maitrise,
             'ca': self.ca,
             'pv': self.pv,
@@ -192,11 +195,135 @@ class Character:
             'de_degats': self.de_degats,
             'bonusdeg': self.bonusdeg
         }
-        # nom du fichier basé sur le nom du personnage
-        filename = self.name + ".json"
-        with open(filename, 'w', encoding="utf-8") as f:
-            f.write(json.dumps(data, indent=4, ensure_ascii=False))
-        return filename
+
+
+# ---------------- remplisseur pdf - Ruben ten Cate ------------------------- #
+
+def remplir_fiche_pdf(raw_data, template_pdf='Fiche personnage D&D.pdf'):
+    output_pdf = raw_data["name"] + "_remplie.pdf"
+    data = {}
+    checkbox_fields = {}
+
+    # Mapping des clés JSON aux champs PDF
+    json_to_pdf = {
+        "name": "CharacterName",
+        "race": "Race",
+        "classe": "ClassLevel",
+        "background": "Background",
+        "force": "STR",
+        "modif_force": "STRmod",
+        "dexterite": "DEX",
+        "modif_dexterite": "DEXmod",
+        "constitution": "CON",
+        "modif_constitution": "CONmod",
+        "intelligence": "INT",
+        "modif_intelligence": "INTmod",
+        "sagesse": "WIS",
+        "modif_sagesse": "WISmod",
+        "charisme": "CHA",
+        "modif_charisme": "CHAmod",
+        "maitrise": "ProfBonus",
+        "ca": "AC",
+        "pv": "HPMax",
+        "touche": "Wpn1 AtkBonus",
+        "de_degats": "Wpn1 Damage",
+        "weapon": "Wpn Name"
+    }
+
+    # Remplissage des champs simples
+    for json_key, pdf_field in json_to_pdf.items():
+        value = raw_data.get(json_key)
+        if value is not None:
+            data[pdf_field] = str(value)
+
+    # Champ bouclier
+    data["Equipment"] = "Bouclier équipé" if raw_data.get("shield") == "Equipé" else "Bouclier non équipé"
+
+    # Compétences avec maîtrise et modificateur
+    competence_map = {
+        "Acrobaties (DEX)": ("Check Box 23", "modif_dexterite", "Acrobaties"),
+        "Arcanes (INT)": ("Check Box 24", "modif_intelligence", "Arcanes"),
+        "Athlétisme (FOR)": ("Check Box 25", "modif_force", "Athlétisme"),
+        "Discrétion (DEX)": ("Check Box 26", "modif_dexterite", "Discrétion"),
+        "Dressage (SAG)": ("Check Box 27", "modif_sagesse", "Dressage"),
+        "Escamotage (DEX)": ("Check Box 28", "modif_dexterite", "Escamotage"),
+        "Histoire (INT)": ("Check Box 29", "modif_intelligence", "Histoire"),
+        "Intimidation (CHA)": ("Check Box 30", "modif_charisme", "Intimidation"),
+        "Intuition (SAG)": ("Check Box 31", "modif_sagesse", "Intuition"),
+        "Investigation (INT)": ("Check Box 32", "modif_intelligence", "Investigation"),
+        "Médecine (SAG)": ("Check Box 33", "modif_sagesse", "Médecine"),
+        "Nature (INT)": ("Check Box 34", "modif_intelligence", "Nature"),
+        "Perception (SAG)": ("Check Box 35", "modif_sagesse", "Perception"),
+        "Persuasion (CHA)": ("Check Box 36", "modif_charisme", "Persuasion"),
+        "Religion (INT)": ("Check Box 37", "modif_intelligence", "Religion"),
+        "Représentation (CHA)": ("Check Box 38", "modif_charisme", "Représentation"),
+        "Survie (SAG)": ("Check Box 39", "modif_sagesse", "Survie"),
+        "Tromperie (CHA)": ("Check Box 40", "modif_charisme", "Tromperie")
+    }
+
+    # Bonus de maîtrise selon la maîtrise du personnage
+
+    try:
+        prof_bonus = int(raw_data.get("maitrise", 0))
+    except (TypeError, ValueError):
+        prof_bonus = 0
+
+    for skill, (checkbox_name, modif_key, field_name) in competence_map.items():
+        try:
+            modif = int(raw_data.get(modif_key, 0))
+        except (TypeError, ValueError):
+            modif = 0
+
+        if skill in raw_data.get("skills", []):
+            checkbox_fields[checkbox_name] = True
+            data[field_name] = str(modif + prof_bonus)
+        else:
+            data[field_name] = str(modif)
+
+    # Valeurs des caractéristiques
+    saving_throws = {
+        "force": ("Check Box 11", "ST Strength"),
+        "dexterite": ("Check Box 18", "ST Dexterity"),
+        "constitution": ("Check Box 19", "ST Constitution"),
+        "intelligence": ("Check Box 20", "ST Intelligence"),
+        "sagesse": ("Check Box 21", "ST Wisdom"),
+        "charisme": ("Check Box 22", "ST Charisma")
+    }
+
+    for stat, (checkbox_name, field_name) in saving_throws.items():
+        if raw_data.get(f"save_{stat}") == "Oui":
+            checkbox_fields[checkbox_name] = True
+        try:
+            value = int(raw_data.get(f"modif_{stat}", 0))
+            data[field_name] = str(value)
+        except (TypeError, ValueError):
+            data[field_name] = "0"
+
+    data["ProficienciesLang"] = ""
+
+    # Remplissage du PDF
+    template = PdfReader(template_pdf)
+    if template.Root.AcroForm:
+        template.Root.AcroForm.update(PdfDict(NeedAppearances=PdfObject('true')))
+
+    for page in template.pages:
+        annotations = page['/Annots']
+        if annotations:
+            for annotation in annotations:
+                if annotation['/Subtype'] == '/Widget' and annotation['/T']:
+                    key = annotation['/T'][1:-1].strip()
+                    if key in data:
+                        annotation.update(PdfDict(V=PdfString.encode(data[key])))
+                    elif key in checkbox_fields:
+                        annotation.update(PdfDict(AS=PdfName('Yes')))
+
+    PdfWriter().write(output_pdf, template)
+    time.sleep(0.5)
+    if os.path.exists(output_pdf):
+        print("✅ PDF généré :", output_pdf)
+        subprocess.Popen([output_pdf], shell=True)
+    else:
+        print("❌ Échec : le fichier n’a pas été créé.")
 
 
 # ------------------------- Interface Graphique ------------------------- #
@@ -209,7 +336,7 @@ class CharacterCreatorGUI:
     def __init__(self, root):
         self.root = root
         self.root.title("Créateur de personnage D&D 5e")
-        self.root.geometry("800x600")
+        self._center_window(800, 600)
         self.root.configure(bg='#2c3e50')
 
         # Variables pour stocker les choix de l'utilisateur
@@ -221,14 +348,20 @@ class CharacterCreatorGUI:
         # Frame principal avec scrollbar
         self.main_canvas = tk.Canvas(root, bg='#2c3e50')
         self.scrollbar = ttk.Scrollbar(root, orient="vertical", command=self.main_canvas.yview)
-        self.scrollable_frame = tk.Frame(self.main_canvas, bg='#2c3e50')
 
-        self.scrollable_frame.bind(
+        # centrer le frame dans le canvas (Ruben)
+        self.center_frame = tk.Frame(self.main_canvas, bg='#2c3e50')
+        self.canvas_window = self.main_canvas.create_window(
+            (self.root.winfo_width() // 2, 0), window=self.center_frame, anchor="n"
+        )
+
+        self.main_canvas.bind("<Configure>", self._resize_canvas)
+
+        self.center_frame.bind(
             "<Configure>",
             lambda e: self.main_canvas.configure(scrollregion=self.main_canvas.bbox("all"))
         )
 
-        self.main_canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
         self.main_canvas.configure(yscrollcommand=self.scrollbar.set)
 
         self.main_canvas.pack(side="left", fill="both", expand=True)
@@ -237,23 +370,36 @@ class CharacterCreatorGUI:
         # Démarrer la création de personnage
         self.show_welcome_screen()
 
+    def _resize_canvas(self, event):
+        canvas_width = event.width
+        self.main_canvas.itemconfig(self.canvas_window, width=canvas_width)
+        self.main_canvas.coords(self.canvas_window, canvas_width // 2, 0)
+
+    def _center_window(self, width, height):
+        """Centre la fenêtre sur l'écran"""
+        screen_width = self.root.winfo_screenwidth()
+        screen_height = self.root.winfo_screenheight()
+        x = (screen_width // 2) - (width // 2)
+        y = (screen_height // 2) - (height // 2)
+        self.root.geometry(f'{width}x{height}+{x}+{y}')
+
     def clear_frame(self):
-        """Efface tous les widgets du frame principal"""
-        for widget in self.scrollable_frame.winfo_children():
+        """Efface tous les widgets du frame centré"""
+        for widget in self.center_frame.winfo_children():
             widget.destroy()
 
     def show_welcome_screen(self):
         """Écran d'accueil"""
         self.clear_frame()
 
-        title = tk.Label(self.scrollable_frame,
+        title = tk.Label(self.center_frame,
                          text="Créateur de personnage D&D 5e",
                          font=("Arial", 24, "bold"),
                          bg='#2c3e50',
                          fg='#ecf0f1')
         title.pack(pady=30)
 
-        subtitle = tk.Label(self.scrollable_frame,
+        subtitle = tk.Label(self.center_frame,
                             text="Bienvenue dans le créateur de personnage\nChoix de base (OOP)",
                             font=("Arial", 14),
                             bg='#2c3e50',
@@ -261,7 +407,7 @@ class CharacterCreatorGUI:
                             justify='center')
         subtitle.pack(pady=20)
 
-        start_button = tk.Button(self.scrollable_frame,
+        start_button = tk.Button(self.center_frame,
                                  text="Commencer la création",
                                  command=self.ask_name,
                                  font=("Arial", 14),
@@ -276,14 +422,14 @@ class CharacterCreatorGUI:
         """Demande le nom du personnage"""
         self.clear_frame()
 
-        title = tk.Label(self.scrollable_frame,
+        title = tk.Label(self.center_frame,
                          text="Nom du personnage",
                          font=("Arial", 18, "bold"),
                          bg='#2c3e50',
                          fg='#ecf0f1')
         title.pack(pady=20)
 
-        name_entry = tk.Entry(self.scrollable_frame,
+        name_entry = tk.Entry(self.center_frame,
                               font=("Arial", 14),
                               width=30)
         name_entry.pack(pady=20)
@@ -297,7 +443,7 @@ class CharacterCreatorGUI:
             self.character_data['name'] = name
             self.ask_race()
 
-        continue_button = tk.Button(self.scrollable_frame,
+        continue_button = tk.Button(self.center_frame,
                                     text="Continuer",
                                     command=on_continue,
                                     font=("Arial", 12),
@@ -315,7 +461,7 @@ class CharacterCreatorGUI:
         """Demande la race du personnage"""
         self.clear_frame()
 
-        title = tk.Label(self.scrollable_frame,
+        title = tk.Label(self.center_frame,
                          text="Choisissez une race",
                          font=("Arial", 18, "bold"),
                          bg='#2c3e50',
@@ -323,7 +469,7 @@ class CharacterCreatorGUI:
         title.pack(pady=20)
 
         for race in RACES:
-            btn = tk.Button(self.scrollable_frame,
+            btn = tk.Button(self.center_frame,
                             text=race,
                             command=lambda r=race: self.select_race(r),
                             font=("Arial", 12),
@@ -344,7 +490,7 @@ class CharacterCreatorGUI:
         """Demande la classe du personnage"""
         self.clear_frame()
 
-        title = tk.Label(self.scrollable_frame,
+        title = tk.Label(self.center_frame,
                          text="Choisissez une classe",
                          font=("Arial", 18, "bold"),
                          bg='#2c3e50',
@@ -352,7 +498,7 @@ class CharacterCreatorGUI:
         title.pack(pady=20)
 
         for classe in CLASSES:
-            btn = tk.Button(self.scrollable_frame,
+            btn = tk.Button(self.center_frame,
                             text=classe,
                             command=lambda c=classe: self.select_classe(c),
                             font=("Arial", 12),
@@ -373,7 +519,7 @@ class CharacterCreatorGUI:
         """Demande la méthode de génération des statistiques"""
         self.clear_frame()
 
-        title = tk.Label(self.scrollable_frame,
+        title = tk.Label(self.center_frame,
                          text="Choisissez une méthode de génération des statistiques",
                          font=("Arial", 18, "bold"),
                          bg='#2c3e50',
@@ -381,7 +527,7 @@ class CharacterCreatorGUI:
         title.pack(pady=20)
 
         # Méthode fixe
-        fixed_frame = tk.Frame(self.scrollable_frame, bg='#34495e', relief='raised', bd=2)
+        fixed_frame = tk.Frame(self.center_frame, bg='#34495e', relief='raised', bd=2)
         fixed_frame.pack(pady=10, padx=20, fill='x')
 
         fixed_title = tk.Label(fixed_frame,
@@ -410,7 +556,7 @@ class CharacterCreatorGUI:
         fixed_button.pack(pady=10)
 
         # Méthode aléatoire
-        random_frame = tk.Frame(self.scrollable_frame, bg='#34495e', relief='raised', bd=2)
+        random_frame = tk.Frame(self.center_frame, bg='#34495e', relief='raised', bd=2)
         random_frame.pack(pady=10, padx=20, fill='x')
 
         random_title = tk.Label(random_frame,
@@ -469,14 +615,14 @@ class CharacterCreatorGUI:
         stats_list = ['force', 'dexterite', 'constitution', 'intelligence', 'sagesse', 'charisme']
         display_names = ['Force', 'Dextérité', 'Constitution', 'Intelligence', 'Sagesse', 'Charisme']
 
-        title = tk.Label(self.scrollable_frame,
+        title = tk.Label(self.center_frame,
                          text=f"Choisissez un score pour {display_names[index]}",
                          font=("Arial", 18, "bold"),
                          bg='#2c3e50',
                          fg='#ecf0f1')
         title.pack(pady=20)
 
-        info = tk.Label(self.scrollable_frame,
+        info = tk.Label(self.center_frame,
                         text=f"Scores disponibles : {', '.join(map(str, self.available_scores))}",
                         font=("Arial", 12),
                         bg='#2c3e50',
@@ -484,7 +630,7 @@ class CharacterCreatorGUI:
         info.pack(pady=10)
 
         for score in self.available_scores:
-            btn = tk.Button(self.scrollable_frame,
+            btn = tk.Button(self.center_frame,
                             text=str(score),
                             command=lambda s=score: self.select_stat(stat_name, s, index),
                             font=("Arial", 14, "bold"),
@@ -512,14 +658,14 @@ class CharacterCreatorGUI:
         """Affiche les statistiques générées"""
         self.clear_frame()
 
-        title = tk.Label(self.scrollable_frame,
+        title = tk.Label(self.center_frame,
                          text="Statistiques générées",
                          font=("Arial", 18, "bold"),
                          bg='#2c3e50',
                          fg='#ecf0f1')
         title.pack(pady=20)
 
-        #Modif des stats selon les races choisies
+        # Modif des stats selon les races choisies
         if self.character_data['race'] == "Humain":
             self.character_data['force'] += 1
             self.character_data['dexterite'] += 1
@@ -529,13 +675,14 @@ class CharacterCreatorGUI:
             self.character_data['charisme'] += 1
         elif self.character_data['race'] == "Elfe":
             self.character_data['dexterite'] += 2
-            self.character_data['intelligence'] += 1 #en principe sous-race haut elfe dans les règles originales
+            self.character_data['intelligence'] += 1  # en principe sous-race haut elfe dans les règles originales
         elif self.character_data['race'] == "Nain":
             self.character_data['constitution'] += 2
-            self.character_data['force'] += 2 #en principe sous-race nain des montagnes dans les règles originales
+            self.character_data['force'] += 2  # en principe sous-race nain des montagnes dans les règles originales
         elif self.character_data['race'] == "Halfelin":
             self.character_data['dexterite'] += 2
-            self.character_data['charisme'] += 1 #en principe sous-race halfelin pieds-léger dans les règles originales
+            self.character_data[
+                'charisme'] += 1  # en principe sous-race halfelin pieds-léger dans les règles originales
 
         # Calcul des modificateurs
         self.character_data['modif_force'] = int((self.character_data['force'] - 10) // 2)
@@ -545,7 +692,7 @@ class CharacterCreatorGUI:
         self.character_data['modif_sagesse'] = int((self.character_data['sagesse'] - 10) // 2)
         self.character_data['modif_charisme'] = int((self.character_data['charisme'] - 10) // 2)
 
-        stats_frame = tk.Frame(self.scrollable_frame, bg='#34495e', relief='raised', bd=2)
+        stats_frame = tk.Frame(self.center_frame, bg='#34495e', relief='raised', bd=2)
         stats_frame.pack(pady=10, padx=50, fill='x')
 
         stats = [
@@ -565,7 +712,7 @@ class CharacterCreatorGUI:
                                  fg='#ecf0f1')
             stat_line.pack(pady=5)
 
-        continue_button = tk.Button(self.scrollable_frame,
+        continue_button = tk.Button(self.center_frame,
                                     text="Continuer",
                                     command=self.ask_background,
                                     font=("Arial", 12),
@@ -580,7 +727,7 @@ class CharacterCreatorGUI:
         """Demande l'historique du personnage"""
         self.clear_frame()
 
-        title = tk.Label(self.scrollable_frame,
+        title = tk.Label(self.center_frame,
                          text="Choisissez un historique",
                          font=("Arial", 18, "bold"),
                          bg='#2c3e50',
@@ -588,7 +735,7 @@ class CharacterCreatorGUI:
         title.pack(pady=20)
 
         for background in BACKGROUNDS:
-            btn = tk.Button(self.scrollable_frame,
+            btn = tk.Button(self.center_frame,
                             text=background,
                             command=lambda b=background: self.select_background(b),
                             font=("Arial", 12),
@@ -609,7 +756,7 @@ class CharacterCreatorGUI:
         """Demande le choix de l'arme en fonction de la classe"""
         self.clear_frame()
 
-        title = tk.Label(self.scrollable_frame,
+        title = tk.Label(self.center_frame,
                          text="Choisissez une arme",
                          font=("Arial", 18, "bold"),
                          bg='#2c3e50',
@@ -628,7 +775,7 @@ class CharacterCreatorGUI:
             weapons = WEAPON_CLERC
 
         for weapon in weapons:
-            btn = tk.Button(self.scrollable_frame,
+            btn = tk.Button(self.center_frame,
                             text=weapon,
                             command=lambda w=weapon: self.select_weapon(w),
                             font=("Arial", 12),
@@ -659,7 +806,7 @@ class CharacterCreatorGUI:
         """Demande si le personnage équipe un bouclier"""
         self.clear_frame()
 
-        title = tk.Label(self.scrollable_frame,
+        title = tk.Label(self.center_frame,
                          text="Voulez-vous équiper un bouclier ?",
                          font=("Arial", 18, "bold"),
                          bg='#2c3e50',
@@ -667,7 +814,7 @@ class CharacterCreatorGUI:
         title.pack(pady=20)
 
         for shield in SHIELD:
-            btn = tk.Button(self.scrollable_frame,
+            btn = tk.Button(self.center_frame,
                             text=shield,
                             command=lambda s=shield: self.select_shield(s),
                             font=("Arial", 12),
@@ -752,14 +899,14 @@ class CharacterCreatorGUI:
 
         nbr_comp = self.character_data['nbr_comp']
 
-        title = tk.Label(self.scrollable_frame,
+        title = tk.Label(self.center_frame,
                          text=f"Choisissez vos compétences ({len(self.selected_skills)}/{nbr_comp})",
                          font=("Arial", 18, "bold"),
                          bg='#2c3e50',
                          fg='#ecf0f1')
         title.pack(pady=20)
 
-        info = tk.Label(self.scrollable_frame,
+        info = tk.Label(self.center_frame,
                         text=f"Sélectionnez {nbr_comp} compétences pour votre personnage",
                         font=("Arial", 12),
                         bg='#2c3e50',
@@ -768,7 +915,7 @@ class CharacterCreatorGUI:
 
         # Frame pour les compétences sélectionnées
         if self.selected_skills:
-            selected_frame = tk.Frame(self.scrollable_frame, bg='#27ae60', relief='raised', bd=2)
+            selected_frame = tk.Frame(self.center_frame, bg='#27ae60', relief='raised', bd=2)
             selected_frame.pack(pady=10, padx=50, fill='x')
 
             selected_label = tk.Label(selected_frame,
@@ -787,7 +934,7 @@ class CharacterCreatorGUI:
                 skill_label.pack(pady=2)
 
         # Frame avec scrollbar pour les compétences disponibles
-        skills_frame = tk.Frame(self.scrollable_frame, bg='#2c3e50')
+        skills_frame = tk.Frame(self.center_frame, bg='#2c3e50')
         skills_frame.pack(pady=10, fill='both', expand=True)
 
         for skill in self.available_skills:
@@ -854,7 +1001,7 @@ class CharacterCreatorGUI:
         """Affiche le résumé du personnage"""
         self.clear_frame()
 
-        title = tk.Label(self.scrollable_frame,
+        title = tk.Label(self.center_frame,
                          text="Fiche de personnage créée !",
                          font=("Arial", 20, "bold"),
                          bg='#2c3e50',
@@ -862,7 +1009,7 @@ class CharacterCreatorGUI:
         title.pack(pady=20)
 
         # Zone de texte pour le résumé
-        summary_text = scrolledtext.ScrolledText(self.scrollable_frame,
+        summary_text = scrolledtext.ScrolledText(self.center_frame,
                                                  width=70,
                                                  height=25,
                                                  font=("Courier", 10),
@@ -874,7 +1021,7 @@ class CharacterCreatorGUI:
         summary_text.config(state=tk.DISABLED)
 
         # Boutons d'action
-        buttons_frame = tk.Frame(self.scrollable_frame, bg='#2c3e50')
+        buttons_frame = tk.Frame(self.center_frame, bg='#2c3e50')
         buttons_frame.pack(pady=20)
 
         export_button = tk.Button(buttons_frame,
@@ -910,17 +1057,40 @@ class CharacterCreatorGUI:
                                     cursor='hand2')
         new_char_button.grid(row=0, column=2, padx=10)
 
+    # -------------- Fonctions d'export PDF et JSON - Ruben ten Cate ----------------- #
+
     def export_character(self):
-        """Exporte le personnage en JSON"""
-        filename = self.character.to_json()
+        """Exporte le personnage en JSON et en PDF"""
+        if not hasattr(self, "character"):
+            messagebox.showerror("Erreur", "Aucun personnage à exporter.")
+            return
+
+        data = self.character.to_json()
+        json_filename = f"{self.character.name}.json"
+        pdf_filename = f"{self.character.name}_remplie.pdf"
+
+        # Export JSON
+        with open(json_filename, 'w', encoding='utf-8') as f:
+            json.dump(data, f, indent=2, ensure_ascii=False)
+
+        # Export PDF
+        try:
+            remplir_fiche_pdf(data)
+        except Exception as e:
+            messagebox.showerror("Erreur PDF", f"Le PDF n’a pas pu être généré :\n{e}")
+            return
+
+        # Confirmation
         messagebox.showinfo("Export réussi",
-                            f"Fiche de personnage exportée vers {filename}")
+                            f"Fiche exportée en JSON ({json_filename}) et en PDF ({pdf_filename})")
+
+    # --------------- Combat simple contre un gobelin - Camille Bachmann ------------------------- #
 
     def start_combat(self):
         """Lance le combat contre le gobelin"""
         self.clear_frame()
 
-        title = tk.Label(self.scrollable_frame,
+        title = tk.Label(self.center_frame,
                          text="⚔️ COMBAT CONTRE LE GOBELIN ⚔️",
                          font=("Arial", 20, "bold"),
                          bg='#2c3e50',
@@ -928,7 +1098,7 @@ class CharacterCreatorGUI:
         title.pack(pady=20)
 
         # Zone de texte pour le log de combat
-        self.combat_log = scrolledtext.ScrolledText(self.scrollable_frame,
+        self.combat_log = scrolledtext.ScrolledText(self.center_frame,
                                                     width=70,
                                                     height=20,
                                                     font=("Courier", 10),
@@ -938,7 +1108,7 @@ class CharacterCreatorGUI:
         self.combat_log.pack(pady=10, padx=20)
 
         # Bouton pour attaquer
-        self.attack_button = tk.Button(self.scrollable_frame,
+        self.attack_button = tk.Button(self.center_frame,
                                        text="⚔️ Attaquer !",
                                        command=self.process_combat_turn,
                                        font=("Arial", 14, "bold"),
