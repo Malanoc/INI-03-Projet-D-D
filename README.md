@@ -6,8 +6,6 @@ Créateur de personnage pour Donjons & Dragons 5e développé en Python avec une
 
 Ce projet permet de créer des fiches de personnage D&D complètes avec attribution des statistiques, choix d'équipement, sélection de compétences, et même un système de combat contre un Gobelin !
 
-! Avoir installé les différentes librairies python pour faire tourner le code.
-
 ## 👥 Auteurs
 
 - **Amin Torrisi**
@@ -27,6 +25,7 @@ Ce projet permet de créer des fiches de personnage D&D complètes avec attribut
 ### Prérequis
 - Python 3.10 ou supérieur
 - tkinter (inclus par défaut avec Python)
+- pdfrw (a importer)
 
 ### Commande
 
@@ -225,6 +224,7 @@ class Character:
 - Vérifiez que Python 3.10+ est installé : `python --version`
 - Sur Linux, installez tkinter : `sudo apt-get install python3-tk`
 - Sur macOS, réinstallez Python depuis python.org
+- Vérifiez que les libraries nécessaires soient importées
 
 ### Erreur d'encodage
 - Le projet utilise UTF-8
